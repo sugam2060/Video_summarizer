@@ -1,4 +1,4 @@
-#main.py
+# main.py
 import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,7 +50,7 @@ async def ask_question(payload: QARequest):
 
     if not answer or "No transcript available" in answer:
         logger.info("Transcript not available for video: %s", youtube_url)
-        raise HTTPException(status_code=404, detail="Transcript not available for this video")
+        raise HTTPException(status_code=404, detail="Since Youtube is restricting scrapping of transcript, we are not able to answer your question")
 
     return {"answer": answer}
 

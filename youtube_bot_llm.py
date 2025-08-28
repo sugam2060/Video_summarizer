@@ -12,11 +12,13 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
+from youtube_transcript_api.proxies import WebshareProxyConfig
 
 # ------------------ Load environment ------------------
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
+PROXY_USERNAME = os.getenv("PROXY_USERNAME")
+PROXY_PASSWORD = os.getenv("PROXY_PASSWORD")
 # Disable ChromaDB telemetry
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
 
@@ -27,11 +29,19 @@ logger = logging.getLogger(__name__)
 # ------------------ Initialize models ------------------
 try:
     embeddings_model = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001", api_key=GOOGLE_API_KEY)
-    llm_model = ChatGoogleGenerativeAI(model="gemini-2.5-pro", api_key=GOOGLE_API_KEY, temperature=0.2)
+    llm_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", api_key=GOOGLE_API_KEY, temperature=0.2)
 except Exception as e:
     logger.error("Failed to initialize AI models: %s", e)
     embeddings_model = None
     llm_model = None
+
+
+yti_api = YouTubeTranscriptApi(
+    proxy_config=WebshareProxyConfig(
+        proxy_username=PROXY_USERNAME,
+        proxy_password=PROXY_PASSWORD,
+    )
+)
 
 # ------------------ Utility functions ------------------
 def extract_video_id(url: str):
@@ -61,7 +71,7 @@ def transcript_from_youtube(video_url: str = "") -> str:
         return "No transcript available for this video"
 
     try:
-        transcript = YouTubeTranscriptApi().fetch(video_id, languages=['ne', 'hi', 'en'])
+        transcript = yti_api.fetch(video_id, languages=['ne', 'hi', 'en'])
         transcript_text = " ".join(chunk.text for chunk in transcript.snippets)
         return transcript_text.replace("\xa0", " ").strip()
     except TranscriptsDisabled:
